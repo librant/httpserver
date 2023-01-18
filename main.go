@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -20,6 +21,9 @@ func main() {
 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	// 增加云边通道测试
+	mux.HandleFunc("/cloud", cloud)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -54,4 +58,20 @@ func clientIP(r *http.Request) string {
 
 func healthz(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, fmt.Sprintf("%d", http.StatusOK))
+}
+
+func cloud(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, fmt.Sprintf("%d", http.StatusBadRequest))
+		return
+	}
+	bytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, fmt.Sprintf("%d", http.StatusBadRequest))
+		return
+	}
+	defer r.Body.Close()
+
+	fmt.Println(string(bytes))
+	fmt.Fprintf(w, "云端收到！")
 }
